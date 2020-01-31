@@ -1,4 +1,4 @@
 [better-moodle]
 username = username
 password = password
-login_url = https://example.com/
+url = https://moodle.gla.ac.uk

@@ -1,25 +1,44 @@
-from requests import session
-from bs4 import BeautifulSoup as bs
+import time
 import configparser
+from selenium import webdriver
 
 config = configparser.RawConfigParser()
 config.read("config.conf")
 
-USERNAME = config.get("better-moodle", "username")
-PASSWORD = config.get("better-moodle", "password")
-LOGIN_URL = config.get("better-moodle", "login_url")
+username = config.get("better-moodle", "username")
+password = config.get("better-moodle", "password")
+url = config.get("better-moodle", "url")
 
-with session() as ses:
-    site = ses.get(LOGIN_URL)
+driver = webdriver.Chrome()
+courses = []
+
+def login():
+    driver.get(url + "/login/index.php")
+    driver.find_element_by_id("username").send_keys(username)
+    driver.find_element_by_id("password").send_keys(password)
+    driver.find_element_by_class_name("btn").click()
+
+def get_courses():
+    cards = driver.find_elements_by_class_name("dashboard-card")
+
+    for card in cards:
+        id = card.get_attribute("data-course-id")
+        if id != None and id not in courses:
+            courses.append(id)
     
-    content = bs(site.content, "html.parser")
-    
-    token = content.find("input", {"name": "logintoken"})["value"]
+    for course in courses:
+        driver.get(url + "/course/view.php?id=" + course)
+        
+    #print(driver.find_elements_by_class_name("page-link"))
+    #get_courses()
 
-    data = {"username": USERNAME, "password": PASSWORD, "logintoken": token}
 
-    ses.post(LOGIN_URL, data)
+def main():
+    login()
+    time.sleep(5) # sleep while dynamic page content loads in
+    get_courses()
 
-    dashboard = ses.get("https://moodle.gla.ac.uk/my/")
+    driver.close()
 
-    print(dashboard.content)
+if __name__ == "__main__":
+    main()
